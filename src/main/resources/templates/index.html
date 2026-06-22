@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+<title th:text="串口打开继电器">串口打开继电器</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<!-- ✅ 引入 jQuery（需确保邮件客户端支持；注意：多数现代 Webmail 会剥离 script 标签！见下方重要说明） -->
+<script type="text/javascript" src="/js/jquery.min.js"></script>
+<script type="text/javascript" src="/js/echarts.min.js"></script>
+<script type="text/javascript" src="/js/select2.min.js"></script>
+<link rel="stylesheet" href="/css/select2.min.css" />
+<link rel="stylesheet" href="/css/style.css" />
+	<style>
+	.body {
+		width: 100%;
+		height: 100%;
+	}
+	
+	.topbar {
+		width: 99%;
+		height: 30px;
+		vertical-align: middle;
+	}
+	
+	.box {
+		width: 99%;
+		height: 560px;
+		border: 1px solid cornflowerblue;
+		text-align: center;
+		padding-top: 60px;
+	}
+	
+	.button {
+		width: 100px;
+		height: 50px;
+		font-size: 26px;
+	}
+	
+	.textmessage {
+		font-size: 28px;
+		font-weight: bold;
+	}
+	</style>
+</head>
+<body class="body">
+<!-- ... 邮件正文内容（表格、问候语等）保持不变 ... -->
+<p style="text-align: center;font-size: 28px">串口继电器控制系统</p>
+<!-- ✅ 移除 type="submit"，改用 button 避免隐式提交；添加 data-action 属性便于复用 -->
+<form id="decline-form" class="box">
+    <button id="submit-open" type="button" class="button" data-action="/rxtx/jSerialComm/open">打开</button>
+    <button id="submit-close" type="button" class="button" data-action="/rxtx/jSerialComm/close">关闭</button>
+    <label id="opencloseText" class = "textmessage"></label>
+    <br>
+    <button id="submit-diandong" type="button"  class="button" data-action="/rxtx/jSerialComm/openDD">点动</button>
+     <label id="diandongText" class = "textmessage"></label>
+    <br>
+    <button id="submit-open3sec" type="button"  class="button" data-action="/rxtx/jSerialComm/openTime?time=1">打开3秒</button>
+     <label id="open3secText" class = "textmessage"></label>
+     <br>
+     <button id="submit-open2" type="button"  class="button" data-action="/rxtx/jSerialComm/open2">打开</button>
+     <button id="submit-close2" type="button"  class="button" data-action="/rxtx/jSerialComm/close2">关闭</button>
+     <label id="openclose2Text" class = "textmessage"></label>
+     
+</form>
+<p>
+    <span>Regards,weijin workspace Team</span><br/>
+</p>
+<!-- ✅ 使用 document.ready 确保 DOM 加载完成后再绑定事件 -->
+<script>
+$(document).ready(function() {
+    $('#submit-open').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#opencloseText').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                $('#submit-open').prop('disabled', true);
+                $('#submit-close').prop('disabled', false);
+                if(response > 0 ){
+                	 $('#opencloseText').text('打开成功!').css('color', 'black');
+                }else{
+                	 $('#opencloseText').text('打开失败!').css('color', 'red');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+
+$(document).ready(function() {
+    $('#submit-close').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#opencloseText').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                $('#submit-close').prop('disabled', true);
+                $('#submit-open').prop('disabled', false);
+                if(response > 0 ){
+               	 $('#opencloseText').text('关闭成功!').css('color', 'black');
+               }else{
+               	 $('#opencloseText').text('关闭失败!').css('color', 'red');
+               }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+
+$(document).ready(function() {
+    $('#submit-diandong').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#diandongText').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                //$('#submit-diandong').prop('disabled', true);
+                if(response > 0 ){
+               	 $('#diandongText').text('点动成功!').css('color', 'black');
+               }else{
+               	 $('#diandongText').text('点动失败!').css('color', 'red');
+               }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+
+
+$(document).ready(function() {
+    $('#submit-open3sec').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#open3secText').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                //$('#submit-diandong').prop('disabled', true);
+                if(response > 0 ){
+                  	 $('#open3secText').text('打开3秒成功!').css('color', 'black');
+                  }else{
+                  	 $('#open3secText').text('打开3秒失败!').css('color', 'red');
+                  }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+
+
+
+$(document).ready(function() {
+    $('#submit-open2').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#openclose2Text').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                $('#submit-open2').prop('disabled', true);
+                $('#submit-close2').prop('disabled', false);
+                if(response > 0 ){
+                	 $('#openclose2Text').text('打开成功!').css('color', 'black');
+                }else{
+                	 $('#openclose2Text').text('打开失败!').css('color', 'red');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+
+$(document).ready(function() {
+    $('#submit-close2').on('click', function(e) {
+        e.preventDefault(); // ? 必须！阻止任何默认行为
+        const actionUrl = $(this).data('action');
+        const fullUrl = actionUrl; // ⚠️ 生产环境请替换为真实域名（且需 CORS 配置）
+        $('#openclose2Text').text('');
+        $.ajax({
+            url: fullUrl,
+            type: 'GET',
+            dataType: 'text', // 后端返回 String 类型时推荐
+            timeout: 10000,
+            success: function(response) {
+                console.log('✅ Decline request succeeded:', response);
+                // ✅ 可选：更新按钮状态或显示确认提示（仅限支持 JS 的客户端）
+                $('#submit-close2').prop('disabled', true);
+                $('#submit-open2').prop('disabled', false);
+                if(response > 0 ){
+               	 $('#openclose2Text').text('关闭成功!').css('color', 'black');
+               }else{
+               	 $('#openclose2Text').text('关闭失败!');
+               }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Request failed:', status, error);
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>

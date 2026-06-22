@@ -8,7 +8,9 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
-import com.weijin.serialport.serial.SerialService;
+import com.weijin.serialport.jSerialComm.SerialCommPortService;
+import com.weijin.serialport.nettyrxtx.NettyRxtxServer;
+import com.weijin.serialport.serial.RXTXSerialService;
 
 @Service
 public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
@@ -16,7 +18,14 @@ public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemInitConfig.class);
 
 	@Autowired
-	private SerialService serialService;
+	private RXTXSerialService RXTXSerialService;
+
+	@Autowired
+	private NettyRxtxServer nettyRxtxServer;
+
+	@Autowired
+	private SerialCommPortService serialCommPortService;
+
 
 	@Override
 	public void setEnvironment(Environment environment) {
@@ -26,6 +35,8 @@ public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
 	@Override
 	public void run(String... args) throws Exception {
 		// TODO Auto-generated method stub
-		serialService.start();
+		// RXTXSerialService.start();
+		// nettyRxtxServer.start();
+		serialCommPortService.start();
 	}
 }

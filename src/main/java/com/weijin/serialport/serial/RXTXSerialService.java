@@ -27,9 +27,9 @@ import gnu.io.UnsupportedCommOperationException;
  * @date 2021/1/19 12:28
  */
 @Service
-public class SerialService {
+public class RXTXSerialService {
 
-	private static final Logger logger = LoggerFactory.getLogger(SerialService.class);// slf4j 日志记录器
+	private static final Logger logger = LoggerFactory.getLogger(RXTXSerialService.class);// slf4j 日志记录器
 	public Map<String, SerialPort> serialPorts = new HashMap<String, SerialPort>();
 
 	/**
@@ -54,6 +54,7 @@ public class SerialService {
 	 */
 	@Value("${serial.parity:0}")
 	private int parity;
+
 
 	public void start() {
 		// 通过串口通信管理类获得当前连接上的端口列表
@@ -296,7 +297,7 @@ public class SerialService {
 	}
 
 	public static void main(String[] args) {
-		SerialService service = new SerialService();
+		RXTXSerialService service = new RXTXSerialService();
 		// 发送普通数据
 		List<String> portLists = service.findPortName();
 		for (String name : portLists) {

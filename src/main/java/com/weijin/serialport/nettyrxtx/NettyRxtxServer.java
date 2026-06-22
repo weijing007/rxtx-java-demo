@@ -1,8 +1,10 @@
 package com.weijin.serialport.nettyrxtx;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -10,15 +12,19 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.rxtx.RxtxChannel;
 import io.netty.channel.rxtx.RxtxChannelConfig;
 import io.netty.channel.rxtx.RxtxChannelConfig.Databits;
 import io.netty.channel.rxtx.RxtxChannelConfig.Paritybit;
 import io.netty.channel.rxtx.RxtxChannelConfig.Stopbits;
-import io.netty.channel.rxtx.RxtxChannelOption;
 import io.netty.channel.rxtx.RxtxDeviceAddress;
+import io.netty.handler.codec.bytes.ByteArrayDecoder;
+import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,20 +36,19 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-public class RxtxServer {
+public class NettyRxtxServer {
 
 	private RxtxChannel channel;
+	
+
+	@Autowired
+	private NettyRxtxHandler rxtxHandler;
 
 	/**
 	 * 波特率
 	 */
 	@Value("${serial.baudrate:115200}")
 	private int baudrate;
-	/**
-	 * 串口数据位
-	 */
-	@Value("${serial.datebits:8}")
-	private int datebits;
 
 	/**
 	 * 主线程组数量
@@ -80,13 +85,27 @@ public class RxtxServer {
 
 	public void createRxtx() throws Exception {
 		// 串口使用阻塞io
-		EventLoopGroup group = new NioEventLoopGroup(this.bossThread);
+		EventLoopGroup group = new OioEventLoopGroup(this.bossThread);
 		try {
 			Bootstrap bootstrap = new Bootstrap();
-			bootstrap.group(group).channel(RxtxChannel.class)
-					.option(RxtxChannelOption.BAUD_RATE, baudrate)
-					.option(RxtxChannelOption.DATA_BITS, dataBits).option(RxtxChannelOption.PARITY_BIT, parity)
-					.option(RxtxChannelOption.STOP_BITS, stopBits).handler(new RxtxHandler());
+			bootstrap.group(group).channelFactory(() -> {
+				RxtxChannel rxtxChannel = new RxtxChannel();
+				rxtxChannel.config().setBaudrate(baudrate) // 波特率
+						.setDatabits(RxtxChannelConfig.Databits.DATABITS_8) // 数据位
+						.setParitybit(RxtxChannelConfig.Paritybit.NONE) // 校验位
+						.setStopbits(RxtxChannelConfig.Stopbits.STOPBITS_1); // 停止位
+				return rxtxChannel;
+			}).handler(new ChannelInitializer<RxtxChannel>() {
+				@Override
+				protected void initChannel(RxtxChannel rxtxChannel) {
+					rxtxChannel.pipeline().addLast(
+//                                    new LineBasedFrameDecoder(60000),
+					// 文本形式发送编解码
+							new StringEncoder(StandardCharsets.UTF_8), new StringDecoder(StandardCharsets.UTF_8),
+							// 十六进制形式发送编解码
+							new ByteArrayDecoder(), new ByteArrayEncoder(), rxtxHandler);
+				}
+			});
 			ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress("COM1")).sync();
 			f.addListener(connectedListener);
 			f.channel().closeFuture().sync();
@@ -116,8 +135,7 @@ public class RxtxServer {
 		buf.writeByte(3);
 		buf.writeByte(2);
 		channel.writeAndFlush(buf.array());
-
 		// 文本形式发送
-		// channel.writeAndFlush("2");
+		channel.writeAndFlush("connection success !");
 	}
 }

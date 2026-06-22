@@ -57,7 +57,7 @@ public class RXTXSerialPortEventListener implements SerialPortEventListener {
                 try {
 					byte[] readBuffer = readData(serialPort);
 					MSG_QUEUE.add(readBuffer);
-					System.out.println(new String(readBuffer));
+					System.out.println("leng[" + readBuffer.length + "]" + new String(readBuffer));
                 } catch (Exception e) {
                     LOGGER.error("IO异常", e);
                     reset();

@@ -7,15 +7,15 @@ import org.slf4j.LoggerFactory;
  * @author steel
  * datetime 2021/1/15 11:18
  */
-public class SerialPortDataHandle implements Runnable {
+public class RXTXSerialPortDataHandle implements Runnable {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SerialPortDataHandle.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RXTXSerialPortDataHandle.class);
 
     private final RXTXSerialPortEventListener listener;
     // 线程控制标识
     private volatile boolean flag = true;
 
-    public SerialPortDataHandle(RXTXSerialPortEventListener listener) {
+    public RXTXSerialPortDataHandle(RXTXSerialPortEventListener listener) {
         this.listener = listener;
     }
 
