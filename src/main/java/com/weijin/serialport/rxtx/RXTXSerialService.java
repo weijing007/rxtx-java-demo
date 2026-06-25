@@ -11,9 +11,9 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.weijin.serialport.config.SerialConfigService;
 import com.weijin.serialport.utils.ByteUtils;
 
 import gnu.io.CommPort;
@@ -29,34 +29,11 @@ import gnu.io.UnsupportedCommOperationException;
  * @date 2021/1/19 12:28
  */
 @Service
-public class RXTXSerialService {
+public class RXTXSerialService extends SerialConfigService {
 
 	private static final Logger logger = LoggerFactory.getLogger(RXTXSerialService.class);// slf4j 日志记录器
+
 	public Map<String, SerialPort> serialPorts = new HashMap<String, SerialPort>();
-
-	/**
-	 * 波特率
-	 */
-	@Value("${serial.baudrate:9600}")
-	private int baudrate;
-	/**
-	 * 串口数据位
-	 */
-	@Value("${serial.datebits:8}")
-	private int datebits;
-
-	/**
-	 * 停止位
-	 */
-	@Value("${serial.stopbits:1}")
-	private int stopbits;
-
-	/**
-	 * 校验位
-	 */
-	@Value("${serial.parity:0}")
-	private int parity;
-
 
 	public void start() {
 		// 通过串口通信管理类获得当前连接上的端口列表
@@ -64,7 +41,7 @@ public class RXTXSerialService {
 		// 有效连接上的端口的枚举
 		List<CommPortIdentifier> portLists = findPort();
 		for (CommPortIdentifier CommPortIdentifier : portLists) {
-			logger.info("串口设备名称：" + CommPortIdentifier.getName());
+			logger.info("发现串口设备名称：" + CommPortIdentifier.getName());
 			// 判断模拟COM4串口存在，就打开该串口
 			SerialPort serialPort = openComPort(CommPortIdentifier);
 			// 在串口引用不为空时进行下述操作
@@ -153,7 +130,7 @@ public class RXTXSerialService {
 				continue;
 			}
 			list.add(commPort);
-			}
+		}
 		return list;
 	}
 
@@ -261,9 +238,8 @@ public class RXTXSerialService {
 		CommPort commPort = null;
 		try {
 			logger.info("开始打开串口：portName=" + portIdentifier.getName() + ",baudrate=" + baudrate + ",datebits="
-					+ datebits + ",stopbits=" + stopbits + ",parity=" + parity);
+					+ databits + ",stopbits=" + stopbits + ",parity=" + parity);
 			// 通过端口名称识别指定 COM 端口
-
 			/**
 			 * open(String TheOwner, int i)：打开端口 TheOwner 自定义一个端口名称，随便自定义即可
 			 * i：打开的端口的超时时间，单位毫秒，超时则抛出异常：PortInUseException if in use.
@@ -282,7 +258,7 @@ public class RXTXSerialService {
 				 * 如果参数设置错误，则抛出异常：gnu.io.UnsupportedCommOperationException: Invalid Parameter
 				 * 此时必须关闭串口，否则下次 portIdentifier.open 时会打不开串口，因为已经被占用
 				 */
-				serialPort.setSerialPortParams(baudrate, datebits, stopbits, parity);
+				serialPort.setSerialPortParams(baudrate, databits, stopbits, parity);
 				logger.info("打开串口 " + commPort.getName() + " 成功...");
 				return serialPort;
 			} else {

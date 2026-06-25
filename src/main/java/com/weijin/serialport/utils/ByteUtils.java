@@ -146,7 +146,6 @@ public class ByteUtils extends ByteUtil {
 		return ret;
 	}
 
-
 	/**
 	 * 截取byte数组 不改变原数组
 	 *
@@ -165,13 +164,18 @@ public class ByteUtils extends ByteUtil {
 		return Double.parseDouble(df.format(value));
 	}
 
+	public static byte intToHexByte(int num) {
+		byte[] hexValues = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F' };
+		byte high = (byte) ((num >> 4) & 0x0F);
+		byte low = (byte) (num & 0x0F);
+		return (byte) ((hexValues[high] << 4) | hexValues[low]);
+	}
+
 	public static void main(String[] args) {
 		// 01 04 10 04 00 02 34 CA
 		byte[] bytes = new byte[] { 0x01, 0x04, 0x10, 0x04, 0x00, 0x02 };
 		System.out.println(getCRC(bytes));
 		System.out.println(byteArrayToHexString(calculateCRC16Modbus(bytes)));
-
-
 		byte[] bytess = new byte[] { 0x3E, 0x39, (byte) 0xDB, 0x58 };
 		System.out.println(ByteUtils.bytesToFloat(bytess, ByteOrder.BIG_ENDIAN) * 1000);
 

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.weijin.serialport.config.SerialConfigService;
 import com.weijin.serialport.jSerialComm.SerialCommPortListener;
 import com.weijin.serialport.utils.ByteUtils;
 
@@ -22,9 +23,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.rxtx.RxtxChannel;
 import io.netty.channel.rxtx.RxtxChannelConfig;
-import io.netty.channel.rxtx.RxtxChannelConfig.Databits;
-import io.netty.channel.rxtx.RxtxChannelConfig.Paritybit;
-import io.netty.channel.rxtx.RxtxChannelConfig.Stopbits;
 import io.netty.channel.rxtx.RxtxDeviceAddress;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
@@ -39,23 +37,9 @@ import io.netty.util.concurrent.GenericFutureListener;
  * @Date
  */
 @Component
-public class NettyRxtxServer {
+public class NettyRxtxServer extends SerialConfigService {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerialCommPortListener.class);
-
-	private static final String PORTNAME = "COM3";
-
-	private RxtxChannel channel;
-	
-
-	@Autowired
-	private NettyRxtxHandler rxtxHandler;
-
-	/**
-	 * 波特率
-	 */
-	@Value("${serial.baudrate:9600}")
-	private int baudrate;
 
 	/**
 	 * 主线程组数量
@@ -63,21 +47,10 @@ public class NettyRxtxServer {
 	@Value("${netty.bossThread:1}")
 	private int bossThread;
 
-	/**
-	 * 数据位 默认8位
-	 * 可以设置的值：SerialPort.DATABITS_5、SerialPort.DATABITS_6、SerialPort.DATABITS_7、SerialPort.DATABITS_8
-	 */
-	private Databits dataBits = RxtxChannelConfig.Databits.DATABITS_8;
-	/**
-	 * 停止位
-	 * 可以设置的值：SerialPort.STOPBITS_1、SerialPort.STOPBITS_2、SerialPort.STOPBITS_1_5
-	 */
-	private Stopbits stopBits = RxtxChannelConfig.Stopbits.STOPBITS_1;
-	/**
-	 * 校验位
-	 * 可以设置的值：SerialPort.PARITY_NONE、SerialPort.PARITY_ODD、SerialPort.PARITY_EVEN、SerialPort.PARITY_MARK、SerialPort.PARITY_SPACE
-	 */
-	private Paritybit parity = RxtxChannelConfig.Paritybit.NONE;
+	private RxtxChannel channel;
+
+	@Autowired
+	private NettyRxtxHandler rxtxHandler;
 
 	public void start() {
 		CompletableFuture.runAsync(() -> {
@@ -107,13 +80,13 @@ public class NettyRxtxServer {
 				protected void initChannel(RxtxChannel rxtxChannel) {
 					rxtxChannel.pipeline().addLast(
 //                                    new LineBasedFrameDecoder(60000),
-					// 文本形式发送编解码
+							// 文本形式发送编解码
 							new StringEncoder(StandardCharsets.UTF_8), new StringDecoder(StandardCharsets.UTF_8),
 							// 十六进制形式发送编解码
 							new ByteArrayDecoder(), new ByteArrayEncoder(), rxtxHandler);
 				}
 			});
-			ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress(PORTNAME)).sync();
+			ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress(DefaultPORTNAME)).sync();
 			f.addListener(connectedListener);
 			f.channel().closeFuture().sync();
 		} finally {
@@ -155,7 +128,7 @@ public class NettyRxtxServer {
 		buf.writeBytes(data);
 		ChannelFuture fu = channel.writeAndFlush(buf.array());
 		String ss = ByteUtils.byteArrayToHexString(data);
-		logger.info("向串口[{}]发送长度{} 数据：{}", PORTNAME, data.length, ss);
+		logger.info("向串口[{}]发送长度{} 数据：{}", DefaultPORTNAME, data.length, ss);
 		return fu.isSuccess();
 	}
 

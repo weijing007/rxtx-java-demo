@@ -8,38 +8,25 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.weijin.serialport.config.SerialConfigService;
 import com.weijin.serialport.utils.ByteUtils;
 
 import cn.hutool.core.util.StrUtil;
 
 @Component
-public class SerialCommPortService {
+public class SerialCommPortService extends SerialConfigService {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerialCommPortService.class);
-
-	/**
-	 * 波特率
-	 */
-	// @Value("${serial.baudrate:115200}")
-	// private static Integer baudrate = new Integer(115200);
-
-	@Value("${serial.baudrate:9600}")
-	private static Integer baudrate = new Integer(9600);
 
 	private static final byte[] openbyte = new byte[] { (byte) 0xA0, 0x01, 0x01 };
 
 	private static final byte[] closebyte = new byte[] { (byte) 0xA0, 0x01, 0x00 };
 
 	public Map<String, SerialPort> serialPorts = new HashMap<String, SerialPort>();
-
-	//ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
-	private String defaultCom = "";
 
 	/**
 	 * 定时检测客户端/服务的链接状态，未链接成功重新链接
@@ -53,7 +40,6 @@ public class SerialCommPortService {
 			}
 			reOpenPort(f);
 		});
-
 	}
 
 	public void start() {
@@ -98,7 +84,6 @@ public class SerialCommPortService {
 		boolean issuccesss = serialPort.openPort();
 		addListener(serialPort);
 		serialPorts.put(portName, serialPort);
-		defaultCom = portName;
 		return issuccesss;
 	}
 
@@ -255,7 +240,7 @@ public class SerialCommPortService {
 	 * @param content    待发送数据
 	 */
 	public int openTimeSerial(String portName, int second) {
-		byte time = intToHexByte(second);
+		byte time = ByteUtils.intToHexByte(second);
 		byte[] bytes = new byte[] { (byte) 0xB0, 0x01, time };
 		return sendToPortAll(portName, bytes);
 	}
@@ -281,7 +266,7 @@ public class SerialCommPortService {
 		byte[] bytes = new byte[] { (byte) 0xF1, 0x01 };
 		return sendToPortAll(portName, bytes);
 	}
-	
+
 	/**
 	 * 往串口发送数据
 	 *
@@ -294,13 +279,6 @@ public class SerialCommPortService {
 		return i;
 	}
 
-	private byte intToHexByte(int num) {
-		byte[] hexValues = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F' };
-		byte high = (byte) ((num >> 4) & 0x0F);
-		byte low = (byte) (num & 0x0F);
-		return (byte) ((hexValues[high] << 4) | hexValues[low]);
-	}
-
 	/**
 	 * 往串口发送数据
 	 *
@@ -308,10 +286,9 @@ public class SerialCommPortService {
 	 * @param content    待发送数据
 	 */
 	public int openSerial2(String portName) {
-		byte[] openbyte2 = new byte[] { (byte) 0xA0, 0x01, 0x01, (byte) 0XA2};
+		byte[] openbyte2 = new byte[] { (byte) 0xA0, 0x01, 0x01, (byte) 0XA2 };
 		return sendToPortAll(portName, openbyte2);
 	}
-
 
 	/**
 	 * 往串口发送数据
@@ -324,7 +301,6 @@ public class SerialCommPortService {
 		return sendToPortAll(portName, closebyte2);
 	}
 
-
 	/**
 	 * 往串口发送数据
 	 *
@@ -332,8 +308,8 @@ public class SerialCommPortService {
 	 * @param content    待发送数据
 	 */
 	public int openTimeSerial2(String portName, int second) {
-		byte time = intToHexByte(second);
-		byte crc = (byte) (0xB0+0x01+time);
+		byte time = ByteUtils.intToHexByte(second);
+		byte crc = (byte) (0xB0 + 0x01 + time);
 		byte[] bytes = new byte[] { (byte) 0xB0, 0x01, time, crc };
 		return sendToPortAll(portName, bytes);
 	}

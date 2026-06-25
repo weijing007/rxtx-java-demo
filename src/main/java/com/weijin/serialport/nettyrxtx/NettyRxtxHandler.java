@@ -36,8 +36,7 @@ public class NettyRxtxHandler extends SimpleChannelInboundHandler<String> {
 				// 文本形式发送编解码
 				new StringEncoder(StandardCharsets.UTF_8), new StringDecoder(StandardCharsets.UTF_8),
 				// 十六进制形式发送编解码
-				new ByteArrayDecoder(), new ByteArrayEncoder()
-				);
+				new ByteArrayDecoder(), new ByteArrayEncoder());
 	}
 
 	@Override
