@@ -46,18 +46,18 @@
 <p style="text-align: center;font-size: 28px">串口继电器控制系统</p>
 <!-- ✅ 移除 type="submit"，改用 button 避免隐式提交；添加 data-action 属性便于复用 -->
 <form id="decline-form" class="box">
-    <button id="submit-open" type="button" class="button" data-action="/rxtx/jSerialComm/open">打开</button>
-    <button id="submit-close" type="button" class="button" data-action="/rxtx/jSerialComm/close">关闭</button>
+    <button id="submit-open" type="button" class="button" data-action="/jSerialComm/open">打开</button>
+    <button id="submit-close" type="button" class="button" data-action="/jSerialComm/close">关闭</button>
     <label id="opencloseText" class = "textmessage"></label>
     <br>
-    <button id="submit-diandong" type="button"  class="button" data-action="/rxtx/jSerialComm/openDD">点动</button>
+    <button id="submit-diandong" type="button"  class="button" data-action="/jSerialComm/openDD">点动</button>
      <label id="diandongText" class = "textmessage"></label>
     <br>
-    <button id="submit-open3sec" type="button"  class="button" data-action="/rxtx/jSerialComm/openTime?time=1">打开3秒</button>
+    <button id="submit-open3sec" type="button"  class="button" data-action="/jSerialComm/openTime?time=1">打开3秒</button>
      <label id="open3secText" class = "textmessage"></label>
      <br>
-     <button id="submit-open2" type="button"  class="button" data-action="/rxtx/jSerialComm/open2">打开</button>
-     <button id="submit-close2" type="button"  class="button" data-action="/rxtx/jSerialComm/close2">关闭</button>
+     <button id="submit-open2" type="button"  class="button" data-action="/jSerialComm/open2">打开</button>
+     <button id="submit-close2" type="button"  class="button" data-action="/jSerialComm/close2">关闭</button>
      <label id="openclose2Text" class = "textmessage"></label>
      
 </form>

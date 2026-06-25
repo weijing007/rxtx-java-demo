@@ -1,4 +1,4 @@
-package com.weijin.serialport.serial;
+package com.weijin.serialport.rxtx;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.weijin.serialport.utils.ByteUtils;
 
 import gnu.io.CommPort;
 import gnu.io.CommPortIdentifier;
@@ -35,7 +37,7 @@ public class RXTXSerialService {
 	/**
 	 * 波特率
 	 */
-	@Value("${serial.baudrate:115200}")
+	@Value("${serial.baudrate:9600}")
 	private int baudrate;
 	/**
 	 * 串口数据位
@@ -64,7 +66,6 @@ public class RXTXSerialService {
 		for (CommPortIdentifier CommPortIdentifier : portLists) {
 			logger.info("串口设备名称：" + CommPortIdentifier.getName());
 			// 判断模拟COM4串口存在，就打开该串口
-			logger.info("测试串口设备名称：" + CommPortIdentifier.getName());
 			SerialPort serialPort = openComPort(CommPortIdentifier);
 			// 在串口引用不为空时进行下述操作
 			if (Objects.isNull(serialPort)) {
@@ -97,7 +98,7 @@ public class RXTXSerialService {
 			port.notifyOnDataAvailable(true);
 			// 3. 设置串口相关读写参数
 			// 比特率、数据位、停止位、校验位
-			port.setSerialPortParams(baudrate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
+			port.setSerialPortParams(baudrate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 		} catch (Exception e) {
 			// throw new TooManyListeners();
 		}
@@ -167,16 +168,20 @@ public class RXTXSerialService {
 		SerialPort serialPort = serialPorts.get(portName);
 		if (serialPort != null) {
 			sendToPort(serialPort, context.getBytes());
-			closeComPort(serialPort);
 		}
-		// 获得当前所有可用串口
-		List<CommPortIdentifier> portList = findPort();
-		for (CommPortIdentifier CommPortIdentifier : portList) {
-			if (CommPortIdentifier.getName().equals(portName)) {
-				serialPort = openComPort(CommPortIdentifier);
-				sendToPort(serialPort, context.getBytes());
-				closeComPort(serialPort);
-			}
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
+	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
+	 */
+	public void sendToPort(String portName, byte[] contexts) {
+		SerialPort serialPort = serialPorts.get(portName);
+		if (serialPort != null) {
+			sendToPort(serialPort, contexts);
 		}
 	}
 
@@ -194,7 +199,8 @@ public class RXTXSerialService {
 				out = serialPort.getOutputStream();
 				out.write(order);
 				out.flush();
-				logger.info("往串口 " + serialPort.getName() + " 发送数据：" + new String(order) + " 完成...");
+				String ss = ByteUtils.byteArrayToHexString(order);
+				logger.info("往串口 " + serialPort.getName() + " 发送数据：" + ss);
 			} else {
 				logger.error("gnu.io.SerialPort 为null，取消数据发送...");
 			}
@@ -294,6 +300,34 @@ public class RXTXSerialService {
 		}
 		logger.error("打开串口 " + portIdentifier.getName() + " 失败...");
 		return null;
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param content    待发送数据
+	 */
+	public int openSerial(String portName) {
+		byte[] openbyte2 = new byte[] { (byte) 0xA0, 0x01, 0x01, (byte) 0XA2 };
+		findPortName().forEach(port -> {
+			sendToPort(port, openbyte2);
+		});
+		return openbyte2.length;
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param content    待发送数据
+	 */
+	public int closeSerial(String portName) {
+		byte[] closebyte2 = new byte[] { (byte) 0xA0, 0x01, 0x00, (byte) 0XA1 };
+		findPortName().forEach(port -> {
+			sendToPort(port, closebyte2);
+		});
+		return closebyte2.length;
 	}
 
 	public static void main(String[] args) {

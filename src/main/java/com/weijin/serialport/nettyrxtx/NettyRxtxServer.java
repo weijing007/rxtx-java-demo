@@ -4,9 +4,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.weijin.serialport.jSerialComm.SerialCommPortListener;
+import com.weijin.serialport.utils.ByteUtils;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +31,6 @@ import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.concurrent.GenericFutureListener;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 串口接收数据的服务端
@@ -34,9 +38,12 @@ import lombok.extern.slf4j.Slf4j;
  * @author 程就人生
  * @Date
  */
-@Slf4j
 @Component
 public class NettyRxtxServer {
+
+	private static final Logger logger = LoggerFactory.getLogger(SerialCommPortListener.class);
+
+	private static final String PORTNAME = "COM3";
 
 	private RxtxChannel channel;
 	
@@ -47,7 +54,7 @@ public class NettyRxtxServer {
 	/**
 	 * 波特率
 	 */
-	@Value("${serial.baudrate:115200}")
+	@Value("${serial.baudrate:9600}")
 	private int baudrate;
 
 	/**
@@ -106,7 +113,7 @@ public class NettyRxtxServer {
 							new ByteArrayDecoder(), new ByteArrayEncoder(), rxtxHandler);
 				}
 			});
-			ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress("COM1")).sync();
+			ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress(PORTNAME)).sync();
 			f.addListener(connectedListener);
 			f.channel().closeFuture().sync();
 		} finally {
@@ -118,24 +125,61 @@ public class NettyRxtxServer {
 	GenericFutureListener<ChannelFuture> connectedListener = (ChannelFuture f) -> {
 		f.channel().eventLoop();
 		if (!f.isSuccess()) {
-			log.info("连接失败");
+			logger.info("连接失败");
 		} else {
 			channel = (RxtxChannel) f.channel();
-			log.info("连接成功");
-			sendData();
+			logger.info("连接成功");
+			sendDataDefault();
 		}
 	};
 
 	/**
 	 * 发送数据
 	 */
-	public void sendData() {
+	public void sendDataDefault() {
 		// 十六机制形式发送
 		ByteBuf buf = Unpooled.buffer(2);
 		buf.writeByte(3);
 		buf.writeByte(2);
 		channel.writeAndFlush(buf.array());
 		// 文本形式发送
-		channel.writeAndFlush("connection success !");
+		// channel.writeAndFlush("connection success !");
+	}
+
+	/**
+	 * 发送数据
+	 */
+	public boolean sendData(byte[] data) {
+		// 十六机制形式发送
+		ByteBuf buf = Unpooled.buffer(data.length);
+		buf.writeBytes(data);
+		ChannelFuture fu = channel.writeAndFlush(buf.array());
+		String ss = ByteUtils.byteArrayToHexString(data);
+		logger.info("向串口[{}]发送长度{} 数据：{}", PORTNAME, data.length, ss);
+		return fu.isSuccess();
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param content    待发送数据
+	 */
+	public int openSerial(String portName) {
+		byte[] openbyte2 = new byte[] { (byte) 0xA0, 0x01, 0x01, (byte) 0XA2 };
+		sendData(openbyte2);
+		return openbyte2.length;
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param content    待发送数据
+	 */
+	public int closeSerial(String portName) {
+		byte[] closebyte2 = new byte[] { (byte) 0xA0, 0x01, 0x00, (byte) 0XA1 };
+		sendData(closebyte2);
+		return closebyte2.length;
 	}
 }

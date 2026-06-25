@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.weijin.serialport.jSerialComm.SerialCommPortService;
 import com.weijin.serialport.nettyrxtx.NettyRxtxServer;
-import com.weijin.serialport.serial.RXTXSerialService;
+import com.weijin.serialport.rxtx.RXTXSerialService;
 
 @Service
 public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
@@ -18,7 +18,7 @@ public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemInitConfig.class);
 
 	@Autowired
-	private RXTXSerialService RXTXSerialService;
+	private RXTXSerialService rxtxSerialService;
 
 	@Autowired
 	private NettyRxtxServer nettyRxtxServer;
@@ -35,7 +35,7 @@ public class SystemInitConfig implements CommandLineRunner, EnvironmentAware {
 	@Override
 	public void run(String... args) throws Exception {
 		// TODO Auto-generated method stub
-		// RXTXSerialService.start();
+		// rxtxSerialService.start();
 		// nettyRxtxServer.start();
 		serialCommPortService.start();
 	}

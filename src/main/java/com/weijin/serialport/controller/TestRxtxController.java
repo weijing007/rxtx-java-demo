@@ -14,19 +14,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.fastjson.JSONObject;
 import com.weijin.serialport.jSerialComm.SerialCommPortService;
 import com.weijin.serialport.nettyrxtx.NettyRxtxServer;
-import com.weijin.serialport.serial.RXTXSerialService;
+import com.weijin.serialport.rxtx.RXTXSerialService;
 
 import io.swagger.annotations.ApiOperation;
 
 @RestController
-@RequestMapping("/rxtx")
 public class TestRxtxController {
 	
 	@Autowired
-	private NettyRxtxServer rxtxServer;
+	private NettyRxtxServer nettyRxtxServer;
 
 	@Autowired
-	private RXTXSerialService serialService;
+	private RXTXSerialService rxtxSerialService;
 
 	@Autowired
 	private SerialCommPortService jSerialComm;
@@ -34,21 +33,35 @@ public class TestRxtxController {
 	private static final Logger logger = LoggerFactory.getLogger(TestRxtxController.class);
 
 	@ApiOperation(value = "获取串口信息", notes = "获取串口信息")
-	@RequestMapping(value = "/SerialPorts", method = RequestMethod.GET)
+	@RequestMapping(value = "/rxtx/SerialPorts", method = RequestMethod.GET)
 	public String getSerialPorts() {
-		List<String> datas = serialService.findPortName();
+		List<String> datas = rxtxSerialService.findPortName();
 		return JSONObject.toJSONString(datas);
 	}
 
 	@ApiOperation(value = "给串口发送信息", notes = "给串口发送信息")
-	@RequestMapping(value = "/SerialPorts/message", method = RequestMethod.POST)
+	@RequestMapping(value = "/rxtx/SerialPorts/message", method = RequestMethod.POST)
 	public String sendMessage(@RequestParam(value = "portname",required = false) String name, @RequestBody(required = true) String data) {
-		serialService.sendToPort(name, data);
+		rxtxSerialService.sendToPort(name, data);
 		return "OK";
 	}
 
+	@ApiOperation(value = "给串口发送信息", notes = "给串口发送信息")
+	@RequestMapping(value = "/rxtx/open", method = RequestMethod.GET)
+	public int openNettyRxtx(@RequestParam(value = "portname", required = false) String name) {
+		int i = rxtxSerialService.openSerial(name);
+		return i;
+	}
+
+	@ApiOperation(value = "给串口发送信息", notes = "给串口发送信息")
+	@RequestMapping(value = "/rxtx/close", method = RequestMethod.GET)
+	public int closeNettyRxtx(@RequestParam(value = "portname", required = false) String name) {
+		int i = rxtxSerialService.closeSerial(name);
+		return i;
+	}
+
 	@ApiOperation(value = "获取串口信息", notes = "获取串口信息")
-	@RequestMapping(value = "/jSerialCommS", method = RequestMethod.GET)
+	@RequestMapping(value = "/jSerialComms", method = RequestMethod.GET)
 	public String getSerialPortsjSerialComm() {
 		List<String> datas = jSerialComm.findPorts();
 		return JSONObject.toJSONString(datas);
@@ -126,4 +139,20 @@ public class TestRxtxController {
 		int i = jSerialComm.closeSerial2(name);
 		return i;
 	}
+
+	@ApiOperation(value = "给串口发送信息", notes = "给串口发送信息")
+	@RequestMapping(value = "/nettyRxtx/open", method = RequestMethod.GET)
+	public int openRxtx(@RequestParam(value = "portname", required = false) String name) {
+		int i = nettyRxtxServer.openSerial(name);
+		return i;
+	}
+
+	@ApiOperation(value = "给串口发送信息", notes = "给串口发送信息")
+	@RequestMapping(value = "/nettyRxtx/close", method = RequestMethod.GET)
+	public int closeRxtx(@RequestParam(value = "portname", required = false) String name) {
+		int i = nettyRxtxServer.closeSerial(name);
+		return i;
+	}
+
+
 }

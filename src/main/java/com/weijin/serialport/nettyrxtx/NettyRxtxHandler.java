@@ -2,7 +2,11 @@ package com.weijin.serialport.nettyrxtx;
 
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.weijin.serialport.jSerialComm.SerialCommPortListener;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,6 +28,8 @@ import io.netty.util.ReferenceCountUtil;
 @ChannelHandler.Sharable
 public class NettyRxtxHandler extends SimpleChannelInboundHandler<String> {
 
+	private static final Logger logger = LoggerFactory.getLogger(SerialCommPortListener.class);
+
 	protected void initChannel(RxtxChannel rxtxChannel) {
 		rxtxChannel.pipeline().addLast(
 				// new LineBasedFrameDecoder(60000),
@@ -37,9 +43,8 @@ public class NettyRxtxHandler extends SimpleChannelInboundHandler<String> {
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
 		// 文本方式编解码，String
-		System.out.println("接收到[" + msg.length() + "]:" + msg);
+		logger.info("接收到[" + msg.length() + "]:" + msg);
 		// 十六进制发送编解码
-
 		// 释放资源
 		ReferenceCountUtil.release(msg);
 	}

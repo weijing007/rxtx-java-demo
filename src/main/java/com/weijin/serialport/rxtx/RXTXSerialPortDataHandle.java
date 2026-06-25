@@ -1,4 +1,4 @@
-package com.weijin.serialport.serial;
+package com.weijin.serialport.rxtx;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

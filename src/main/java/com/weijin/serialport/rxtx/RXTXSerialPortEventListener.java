@@ -1,4 +1,4 @@
-package com.weijin.serialport.serial;
+package com.weijin.serialport.rxtx;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,6 +7,8 @@ import java.util.concurrent.BlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.weijin.serialport.utils.ByteUtils;
 
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
@@ -57,7 +59,9 @@ public class RXTXSerialPortEventListener implements SerialPortEventListener {
                 try {
 					byte[] readBuffer = readData(serialPort);
 					MSG_QUEUE.add(readBuffer);
-					System.out.println("leng[" + readBuffer.length + "]" + new String(readBuffer));
+					String ss = ByteUtils.byteArrayToHexString(readBuffer);
+					// ss = StrUtil.removeAllLineBreaks(ss);
+					LOGGER.info("收到串口[" + serialPort.getName() + "]:" + ss);
                 } catch (Exception e) {
                     LOGGER.error("IO异常", e);
                     reset();
