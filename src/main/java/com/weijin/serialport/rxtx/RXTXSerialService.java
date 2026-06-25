@@ -35,6 +35,20 @@ public class RXTXSerialService extends SerialConfigService {
 
 	public Map<String, SerialPort> serialPorts = new HashMap<String, SerialPort>();
 
+	/**
+	 * 定时检测客户端/服务的链接状态，未链接成功重新链接
+	 */
+	// @Scheduled(cron = "0/15 * * * * ?")
+	public void checkConnect() {
+		findPort().forEach(CommPortIdentifier -> {
+			SerialPort serialPort = serialPorts.get(CommPortIdentifier.getName());
+			if (serialPort == null) {
+				logger.info("发现串口设备名称：" + CommPortIdentifier.getName());
+				startCommPort(CommPortIdentifier);
+			}
+		});
+	}
+
 	public void start() {
 		// 通过串口通信管理类获得当前连接上的端口列表
 		// （获取一个枚举对象，该CommPortIdentifier对象包含系统中每个端口的对象集[串口、并口]）
@@ -42,62 +56,8 @@ public class RXTXSerialService extends SerialConfigService {
 		List<CommPortIdentifier> portLists = findPort();
 		for (CommPortIdentifier CommPortIdentifier : portLists) {
 			logger.info("发现串口设备名称：" + CommPortIdentifier.getName());
-			// 判断模拟COM4串口存在，就打开该串口
-			SerialPort serialPort = openComPort(CommPortIdentifier);
-			// 在串口引用不为空时进行下述操作
-			if (Objects.isNull(serialPort)) {
-				continue;
-			}
-			// 2. 设置串口监听器
-			addListener(serialPort, new RXTXSerialPortEventListener(serialPort));
-			// closeComPort(serialPort);
-			serialPorts.put(CommPortIdentifier.getName(), serialPort);
+			startCommPort(CommPortIdentifier);
 		}
-	}
-
-	/**
-	 * 添加监听器
-	 *
-	 * @param port     串口对象
-	 * @param listener 串口监听器 // * @throws TooManyListeners 监听类对象过多
-	 */
-	private void addListener(SerialPort port, SerialPortEventListener listener) {
-		try {
-
-			// 给串口添加监听器
-			port.addEventListener(listener);
-			// 设置当有数据到达时唤醒监听接收线程
-			port.notifyOnDataAvailable(true);
-			// 设置当通信中断时唤醒中断线程
-			port.notifyOnBreakInterrupt(true);
-
-			// 设置监听器在有数据时通知生效
-			port.notifyOnDataAvailable(true);
-			// 3. 设置串口相关读写参数
-			// 比特率、数据位、停止位、校验位
-			port.setSerialPortParams(baudrate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-		} catch (Exception e) {
-			// throw new TooManyListeners();
-		}
-	}
-
-	/**
-	 * 关闭监听
-	 *
-	 * @param port
-	 */
-	public void removeListener(SerialPort port) {
-		port.notifyOnRingIndicator(false);
-		port.notifyOnParityError(false);
-		port.notifyOnOverrunError(false);
-		port.notifyOnOutputEmpty(false);
-		port.notifyOnFramingError(false);
-		port.notifyOnDSR(false);
-		port.notifyOnDataAvailable(false);
-		port.notifyOnCTS(false);
-		port.notifyOnCarrierDetect(false);
-		port.notifyOnBreakInterrupt(false);
-		port.removeEventListener();
 	}
 
 	/**
@@ -116,112 +76,17 @@ public class RXTXSerialService extends SerialConfigService {
 		return portNameList;
 	}
 
-	private List<CommPortIdentifier> findPort() {
-		// 获得当前所有可用串口
-		List<CommPortIdentifier> list = new ArrayList<CommPortIdentifier>();
-		Enumeration<CommPortIdentifier> portList = CommPortIdentifier.getPortIdentifiers();
-		while (portList.hasMoreElements()) {
-			CommPortIdentifier commPort = portList.nextElement();
-			/*
-			 * 判断端口类型是否为串口 PORT_SERIAL = 1; 【串口】 PORT_PARALLEL = 2; 【并口】 PORT_I2C = 3; 【I2C】
-			 * PORT_RS485 = 4; 【RS485】 PORT_RAW = 5; 【RAW】
-			 */
-			if (commPort.getPortType() != CommPortIdentifier.PORT_SERIAL) {
-				continue;
-			}
-			list.add(commPort);
+	private void startCommPort(CommPortIdentifier CommPortIdentifier) {
+		// 判断模拟COM4串口存在，就打开该串口
+		SerialPort serialPort = openComPort(CommPortIdentifier);
+		// 在串口引用不为空时进行下述操作
+		if (Objects.isNull(serialPort)) {
+			return;
 		}
-		return list;
-	}
-
-	/**
-	 * 往串口发送数据
-	 *
-	 * @param serialPort 串口对象
-	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
-	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
-	 */
-	public void sendToPort(String portName, String context) {
-		SerialPort serialPort = serialPorts.get(portName);
-		if (serialPort != null) {
-			sendToPort(serialPort, context.getBytes());
-		}
-	}
-
-	/**
-	 * 往串口发送数据
-	 *
-	 * @param serialPort 串口对象
-	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
-	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
-	 */
-	public void sendToPort(String portName, byte[] contexts) {
-		SerialPort serialPort = serialPorts.get(portName);
-		if (serialPort != null) {
-			sendToPort(serialPort, contexts);
-		}
-	}
-
-	/**
-	 * 往串口发送数据
-	 *
-	 * @param serialPort 串口对象
-	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
-	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
-	 */
-	private void sendToPort(SerialPort serialPort, byte[] order) {
-		OutputStream out = null;
-		try {
-			if (serialPort != null) {
-				out = serialPort.getOutputStream();
-				out.write(order);
-				out.flush();
-				String ss = ByteUtils.byteArrayToHexString(order);
-				logger.info("往串口 " + serialPort.getName() + " 发送数据：" + ss);
-			} else {
-				logger.error("gnu.io.SerialPort 为null，取消数据发送...");
-			}
-		} catch (IOException e) {
-			// throw new SendDataToSerialPortFailure();
-		} finally {
-			try {
-				if (out != null) {
-					out.close();
-					out = null;
-				}
-			} catch (IOException e) {
-				// throw new SerialPortOutputStreamCloseFailure();
-			}
-		}
-	}
-
-	/**
-	 * 关闭串口
-	 *
-	 * @param serialport 待关闭的串口对象
-	 */
-	public void closeComPort(String name) {
-		// 获得当前所有可用串口
-		List<CommPortIdentifier> portList = findPort();
-		for (CommPortIdentifier commPortIdentifier : portList) {
-			if (commPortIdentifier.getName().equals(name)) {
-				SerialPort serialPort = openComPort(commPortIdentifier);
-				closeComPort(serialPort);
-				break;
-			}
-		}
-	}
-
-	/**
-	 * 关闭串口
-	 *
-	 * @param serialport 待关闭的串口对象
-	 */
-	private void closeComPort(SerialPort serialPort) {
-		if (serialPort != null) {
-			serialPort.close();
-			logger.info("关闭串口 " + serialPort.getName());
-		}
+		// 2. 设置串口监听器
+		addListener(serialPort, new RXTXSerialPortEventListener(serialPort));
+		// closeComPort(serialPort);
+		serialPorts.put(CommPortIdentifier.getName(), serialPort);
 	}
 
 	/**
@@ -277,6 +142,160 @@ public class RXTXSerialService extends SerialConfigService {
 		logger.error("打开串口 " + portIdentifier.getName() + " 失败...");
 		return null;
 	}
+
+	/**
+	 * 添加监听器
+	 *
+	 * @param port     串口对象
+	 * @param listener 串口监听器 // * @throws TooManyListeners 监听类对象过多
+	 */
+	private void addListener(SerialPort port, SerialPortEventListener listener) {
+		try {
+
+			// 给串口添加监听器
+			port.addEventListener(listener);
+			// 设置当有数据到达时唤醒监听接收线程
+			port.notifyOnDataAvailable(true);
+			// 设置当通信中断时唤醒中断线程
+			port.notifyOnBreakInterrupt(true);
+
+			// 设置监听器在有数据时通知生效
+			port.notifyOnDataAvailable(true);
+			// 3. 设置串口相关读写参数
+			// 比特率、数据位、停止位、校验位
+			port.setSerialPortParams(baudrate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+		} catch (Exception e) {
+			// throw new TooManyListeners();
+		}
+	}
+
+	/**
+	 * 关闭监听
+	 *
+	 * @param port
+	 */
+	private void removeListener(SerialPort port) {
+		port.notifyOnRingIndicator(false);
+		port.notifyOnParityError(false);
+		port.notifyOnOverrunError(false);
+		port.notifyOnOutputEmpty(false);
+		port.notifyOnFramingError(false);
+		port.notifyOnDSR(false);
+		port.notifyOnDataAvailable(false);
+		port.notifyOnCTS(false);
+		port.notifyOnCarrierDetect(false);
+		port.notifyOnBreakInterrupt(false);
+		port.removeEventListener();
+	}
+
+	private List<CommPortIdentifier> findPort() {
+		// 获得当前所有可用串口
+		List<CommPortIdentifier> list = new ArrayList<CommPortIdentifier>();
+		Enumeration<CommPortIdentifier> portList = CommPortIdentifier.getPortIdentifiers();
+		while (portList.hasMoreElements()) {
+			CommPortIdentifier commPort = portList.nextElement();
+			/*
+			 * 判断端口类型是否为串口 PORT_SERIAL = 1; 【串口】 PORT_PARALLEL = 2; 【并口】 PORT_I2C = 3; 【I2C】
+			 * PORT_RS485 = 4; 【RS485】 PORT_RAW = 5; 【RAW】
+			 */
+			if (commPort.getPortType() != CommPortIdentifier.PORT_SERIAL) {
+				continue;
+			}
+			list.add(commPort);
+		}
+		return list;
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
+	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
+	 */
+	private void sendToPort(SerialPort serialPort, byte[] order) {
+		OutputStream out = null;
+		try {
+			if (serialPort != null) {
+				out = serialPort.getOutputStream();
+				out.write(order);
+				out.flush();
+				String ss = ByteUtils.byteArrayToHexString(order);
+				logger.info("往串口 " + serialPort.getName() + " 发送数据：" + ss);
+			} else {
+				logger.error("gnu.io.SerialPort 为null，取消数据发送...");
+			}
+		} catch (IOException e) {
+			// throw new SendDataToSerialPortFailure();
+		} finally {
+			try {
+				if (out != null) {
+					out.close();
+					out = null;
+				}
+			} catch (IOException e) {
+				// throw new SerialPortOutputStreamCloseFailure();
+			}
+		}
+	}
+
+	/**
+	 * 关闭串口
+	 *
+	 * @param serialport 待关闭的串口对象
+	 */
+	private void closeComPort(SerialPort serialPort) {
+		if (serialPort != null) {
+			serialPort.close();
+			logger.info("关闭串口 " + serialPort.getName());
+		}
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
+	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
+	 */
+	public void sendToPort(String portName, String context) {
+		SerialPort serialPort = serialPorts.get(portName);
+		if (serialPort != null) {
+			sendToPort(serialPort, context.getBytes());
+		}
+	}
+
+	/**
+	 * 往串口发送数据
+	 *
+	 * @param serialPort 串口对象
+	 * @param order      待发送数据 // * @throws SendDataToSerialPortFailure 向串口发送数据失败 //
+	 *                   * @throws SerialPortOutputStreamCloseFailure 关闭串口对象的输出流出错
+	 */
+	public void sendToPort(String portName, byte[] contexts) {
+		SerialPort serialPort = serialPorts.get(portName);
+		if (serialPort != null) {
+			sendToPort(serialPort, contexts);
+		}
+	}
+
+	/**
+	 * 关闭串口
+	 *
+	 * @param serialport 待关闭的串口对象
+	 */
+	public void closeComPort(String name) {
+		// 获得当前所有可用串口
+		List<CommPortIdentifier> portList = findPort();
+		for (CommPortIdentifier commPortIdentifier : portList) {
+			if (commPortIdentifier.getName().equals(name)) {
+				SerialPort serialPort = openComPort(commPortIdentifier);
+				closeComPort(serialPort);
+				break;
+			}
+		}
+	}
+
 
 	/**
 	 * 往串口发送数据

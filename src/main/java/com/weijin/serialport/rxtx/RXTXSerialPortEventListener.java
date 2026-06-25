@@ -94,7 +94,7 @@ public class RXTXSerialPortEventListener implements SerialPortEventListener {
 				bufflenth = is.available();
 			}
 		} catch (IOException e) {
-			// logger.error("串口异常，停止服务。", e);
+			LOGGER.error("串口异常，停止服务。", e);
 			System.exit(-1);
 		} finally {
 			try {
